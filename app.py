@@ -1,29 +1,36 @@
+
 from flask import Flask,Response, request
-import pymongo
+from pymongo import MongoClient
 import json
 from bson.objectid import ObjectId
+
+cluster=MongoClient("mongodb+srv://Jyothi:luffy123@cluster1.e4bi4.mongodb.net/?retryWrites=true&w=majority")
+db=cluster["Articles"]
+collection=db["fs.chunks"]
+
 app = Flask(__name__)
-try:
-    mongo =pymongo.MongoClient(
-        host="localhost",
-        port=80,
-        serverSelectionTimeoutMS =1000
-    )
-    db=mongo.Articles
-    mongo.server_info()
-except Exception as ex:
-        print(ex)
+
+# try:
+#     mongo =pymongo.MongoClient(
+#         host="localhost",
+#         port=80,
+#         serverSelectionTimeoutMS =10000
+#     )
+#     db=mongo.Articles
+#     mongo.server_info()
+# except Exception as ex:
+#         print(ex)
 
 
 @app.route("/users",methods=["GET"])
 def get_some_users():
     try:
-        data =list(db.fs_chunks.find())
+        data =list(collection.find({}))
         for users in data:
             users["_id"] = str(users["_id"])
         return Response(
             response=json.dumps(data),
-            status=500,
+            status=200,
             mimetype="application/json"
         )
     except Exception as ex:
@@ -36,13 +43,10 @@ def get_some_users():
 @app.route("/users",methods=["POST"])
 def create_user():
     try:
-       # fs_chunks ={"name":"A","lastName":"AA"}
         Users={
-            "name":request.form["name"]}
-        dbResponse =db.User.insert_one(Users)
+            "authorname":request.form["authorname"]}
+        dbResponse =db.fs.chunks.insert_one(Users)
         print(dbResponse.inserted_id)
-        # for attr in dir(dbResponse):
-        #     print(attr)
         return Response(
             response=json.dumps(
                 {"message":"user created",
@@ -56,12 +60,10 @@ def create_user():
 @app.route("/users/<id>", methods=["PATCH"])
 def update_user(id):
     try:
-        dbResponse = db.User.update_one(
+        dbResponse = db.fs.chunks.update_one(
             {"_id":ObjectId(id)},
-            {"$set":{"name":request.form["name"]}}
+            {"$set":{"authorname":request.form["authorname"]}}
         )
-        # for attr in dir(dbResponse):
-        #     print(f"*****{attr}****")
         if dbResponse.modified_count==1:
             return Response(
                 response=json.dumps(
@@ -91,7 +93,7 @@ def update_user(id):
 @app.route("/users/<id>", methods=["DELETE"])
 def delete_user(id):
     try:
-        dbResponse =db.User.delete_one({"_id":ObjectId(id)})
+        dbResponse =db.fs.chunks.delete_one({"_id":ObjectId(id)})
         for attr in dir(dbResponse):
             print(f"***{attr}***")
         return Response(
