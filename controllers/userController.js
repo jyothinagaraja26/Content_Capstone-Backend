@@ -37,17 +37,29 @@ function saveUser(req, res) {
             }
             if (user2.username != null && user2.email != null && user.password != null) {
                 if (user2.username.length != 0 && user2.email.length != 0 && user.password.length != 0) {
-                    models.User.create(user2).then(result => {
-                        res.status(201).json({
-                            message: "Signed Up Successfully",
-                            user: result
-                        })
-                    }).catch(error => {
-                        if (error.name == 'SequelizeUniqueConstraintError') {
+                    models.User.findOne({ where: { username: req.body.username } }).then(user => {
+                        if (user != null) {
                             res.status(500).json({
-                                message: "Email Id Already In Use!"
+                                message: "Please Select Different Username!"
+                            })
+                        } else {
+                            models.User.create(user2).then(result => {
+                                res.status(201).json({
+                                    message: "Signed Up Successfully",
+                                    user: result
+                                })
+                            }).catch(error => {
+                                if (error.name == 'SequelizeUniqueConstraintError') {
+                                    res.status(500).json({
+                                        message: "Email Id Already In Use!"
+                                    })
+                                }
                             })
                         }
+                    }).catch(error => {
+                        res.status(500).json({
+                            message: "Unable To Connect With Server!"
+                        })
                     })
                 }
                 else {
@@ -58,7 +70,7 @@ function saveUser(req, res) {
             }
             else {
                 res.status(500).json({
-                    message: "Field Cannot Be Null Or Field Missing!"
+                    message: "Field Cannot Be Null Or Field Is Missing!"
                 })
             }
         });
@@ -178,40 +190,40 @@ function deleteUserByEmail(req, res) {
 
 
 //Login Function
-function login(req,res){
+function login(req, res) {
     //checking the email id passed  exists in DB or not
-    models.User.findOne({where:{email:req.body.email}}).then(user =>{
+    models.User.findOne({ where: { email: req.body.email } }).then(user => {
         //console.log(user.password)
-        if(user === null){
+        if (user === null) {
             res.status(201).json({
                 message: "User Not Registered!"
             })
         }
-        else{
+        else {
             //comparing hashed password from table and password text passed from client
-            bcryptjs.compare(req.body.password,user.password, function(err,result){
-            //if both password compared and result is true then create access token for user
-            if(result === true){
-                //in jwt package's sign method create an object with details we want to include in our token
-                const token = jwt.sign({
-                    email:user.email,
-                    userId:user.id
-                },'secret', function(err,token){//jwt.sign takes 3 argument-object,'secret'word, callback function
-                    res.status(201).json({
-                        message:"Authenticated Successfully!",
-                        token:token
+            bcryptjs.compare(req.body.password, user.password, function (err, result) {
+                //if both password compared and result is true then create access token for user
+                if (result === true) {
+                    //in jwt package's sign method create an object with details we want to include in our token
+                    const token = jwt.sign({
+                        email: user.email,
+                        userId: user.id
+                    }, 'secret', function (err, token) {//jwt.sign takes 3 argument-object,'secret'word, callback function
+                        res.status(201).json({
+                            message: "Authenticated Successfully!",
+                            token: token
+                        })
+                    });
+                } else {
+                    res.status(500).json({
+                        message: "Please Enter Valid Credentials!"
                     })
-                });
-            } else{
-                res.status(500).json({
-                    message:"Please Enter Valid Credentials!"
-                })
-            }
+                }
             })
         }
-    }).catch(error =>{
+    }).catch(error => {
         res.status(500).json({
-            message:"Something Went Wrong. Please Try Again!"
+            message: "Something Went Wrong. Please Try Again!"
         })
     })
 }
@@ -219,5 +231,5 @@ function login(req,res){
 
 
 module.exports = {
-    save: saveUser, get: getUserById, update: updateUserByEmail, delete: deleteUserByEmail, login:login
+    save: saveUser, get: getUserById, update: updateUserByEmail, delete: deleteUserByEmail, login: login
 }
