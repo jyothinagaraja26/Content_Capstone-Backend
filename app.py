@@ -1,35 +1,30 @@
-
+from importlib.metadata import files
+from re import search
 from flask import Flask,Response, request
 from pymongo import MongoClient
 import json
 from bson.objectid import ObjectId
 
-cluster=MongoClient("mongodb+srv://Jyothi:luffy123@cluster1.e4bi4.mongodb.net/?retryWrites=true&w=majority")
-db=cluster["Articles"]
-collection=db["fs.chunks"]
+cluster=MongoClient("mongodb+srv://Content_team:Content_Team_GL@cluster0.8esbc.mongodb.net/?retryWrites=true&w=majority")
+db=cluster["articles"]
+db2=cluster["articles_astro"]
+collection=db["fs.files"]
+coll_for_each_articles=db["fs.chunks"]
+collection_of_astro=["fs.files"]
+
 
 app = Flask(__name__)
 
-# try:
-#     mongo =pymongo.MongoClient(
-#         host="localhost",
-#         port=80,
-#         serverSelectionTimeoutMS =10000
-#     )
-#     db=mongo.Articles
-#     mongo.server_info()
-# except Exception as ex:
-#         print(ex)
+# 1.List all articles ( already available ) 
 
-
-@app.route("/users",methods=["GET"])
-def get_some_users():
+@app.route("/getallarticles",methods=["GET"])
+def get_all_articles():
     try:
         data =list(collection.find({}))
         for users in data:
-            users["_id"] = str(users["_id"])
+            users["_id"] = str(users["_id"])   
         return Response(
-            response=json.dumps(data),
+            response=json.dumps(data,default=str),
             status=200,
             mimetype="application/json"
         )
@@ -40,12 +35,61 @@ def get_some_users():
             mimetype="application/json"
         )
 
-@app.route("/users",methods=["POST"])
-def create_user():
+# 2.List details of one article based on one articles  ID  
+
+@app.route("/getonearticlebyid<id>",methods=["GET"])
+def get_articles_withid(id):
+    try:
+        dbResponse =collection.find_one({"_id":ObjectId(id)})
+        return Response(
+            response= json.dumps(dbResponse,default=str),
+                status=200,
+                mimetype="application/json"
+        )
+
+    except Exception as ex:
+            print(ex)
+            return Response(
+            response= json.dumps(
+                {"message":"cannot delete user"},
+                status=500,
+                mimetype="application/json"
+            )
+        )
+#3.List articles based on interest /recommended topics 
+
+#4.List articles based on partial keyword ( global search – title /keywords / Author ) 
+
+#5.	For each user logged in
+# a.List all articles ( already available ) 
+
+@app.route("/getallarticlesbyeachuser",methods=["GET"])
+def get_all_articlesbyuser():
+    try:
+        data =list(collection_of_astro.find({}))
+        for users in data:
+            users["_id"] = str(users["_id"])   
+        return Response(
+            response=json.dumps(data,default=str),
+            status=200,
+            mimetype="application/json"
+        )
+    except Exception as ex:
+        print(ex)
+        return Response( response=json.dumps({"message":"cannot read users"}),
+            status=500,
+            mimetype="application/json"
+        )
+#b.	create particular article 
+@app.route("/createnewarticlebyuser",methods=["POST"])
+def create_articlebyuser():
     try:
         Users={
-            "authorname":request.form["authorname"]}
-        dbResponse =db.fs.chunks.insert_one(Users)
+            "author":request.form["author"],
+            "filename":request.form["filename"],
+            "content_image":request.form["content_image"]
+            }
+        dbResponse =collection_of_astro.insert_one(Users)
         print(dbResponse.inserted_id)
         return Response(
             response=json.dumps(
@@ -56,13 +100,13 @@ def create_user():
         )
     except Exception as ex:
         print(ex)
-    
-@app.route("/users/<id>", methods=["PATCH"])
-def update_user(id):
+ #c.update user articles   
+@app.route("/updatearticlesbyuser/<id>", methods=["PATCH"])
+def update_article(id):
     try:
-        dbResponse = db.fs.chunks.update_one(
+        dbResponse = collection_of_astro.update_one(
             {"_id":ObjectId(id)},
-            {"$set":{"authorname":request.form["authorname"]}}
+            {"$set":{"author":request.form["author"]}}
         )
         if dbResponse.modified_count==1:
             return Response(
@@ -89,11 +133,11 @@ def update_user(id):
             )
         )
 
-
-@app.route("/users/<id>", methods=["DELETE"])
-def delete_user(id):
+#d. delete articles by user
+@app.route("/deletearticlesbyuser/<id>", methods=["DELETE"])
+def delete_article(id):
     try:
-        dbResponse =db.fs.chunks.delete_one({"_id":ObjectId(id)})
+        dbResponse =collection_of_astro.delete_one({"_id":ObjectId(id)})
         for attr in dir(dbResponse):
             print(f"***{attr}***")
         return Response(
@@ -116,4 +160,4 @@ def delete_user(id):
 
 
 if __name__=="__main__":
-    app.run(port=80, debug=True)
+    app.run(debug=True)
