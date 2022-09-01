@@ -1,3 +1,4 @@
+
 from importlib.metadata import files
 from re import search
 from flask import Flask,Response, request
@@ -10,7 +11,7 @@ db=cluster["articles"]
 db2=cluster["articles_astro"]
 collection=db["fs.files"]
 coll_for_each_articles=db["fs.chunks"]
-collection_of_astro=["fs.files"]
+collection_of_astro=db2["fs.files"]
 
 
 app = Flask(__name__)
@@ -37,7 +38,7 @@ def get_all_articles():
 
 # 2.List details of one article based on one articles  ID  
 
-@app.route("/getonearticlebyid<id>",methods=["GET"])
+@app.route("/getonearticlebyid/<id>",methods=["GET"])
 def get_articles_withid(id):
     try:
         dbResponse =collection.find_one({"_id":ObjectId(id)})
@@ -85,9 +86,7 @@ def get_all_articlesbyuser():
 def create_articlebyuser():
     try:
         Users={
-            "author":request.form["author"],
-            "filename":request.form["filename"],
-            "content_image":request.form["content_image"]
+            "author":request.form["author"]
             }
         dbResponse =collection_of_astro.insert_one(Users)
         print(dbResponse.inserted_id)
@@ -99,7 +98,15 @@ def create_articlebyuser():
             mimetype="application/json"
         )
     except Exception as ex:
-        print(ex)
+        print(ex) 
+        return Response(
+            response= json.dumps(
+                {"message":"sorry couldnot create user"},
+                status=500,
+                mimetype="application/json"
+            )
+        )
+
  #c.update user articles   
 @app.route("/updatearticlesbyuser/<id>", methods=["PATCH"])
 def update_article(id):
@@ -111,7 +118,7 @@ def update_article(id):
         if dbResponse.modified_count==1:
             return Response(
                 response=json.dumps(
-                {"message":"user updated"}),
+                {"message":"user updated"},default=str),
             status=200,
             mimetype="application/json"
         )
@@ -122,7 +129,6 @@ def update_article(id):
             status=200,
             mimetype="application/json"
         )
-
     except Exception as ex:
         print(ex)
         return Response(
