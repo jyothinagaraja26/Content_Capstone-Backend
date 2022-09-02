@@ -59,7 +59,28 @@ def get_articles_withid(id):
         )
 #3.List articles based on interest /recommended topics 
 
-#4.List articles based on partial keyword ( global search – title /keywords / Author ) 
+#4.List articles based on partial keyword ( global search – keywords ) 
+@app.route("/search",methods=["GET"])
+def seacrh():
+    try:
+        cursor = list(db.collection.find(
+            {'$text': {'$search': 'keywords'}},
+            {'score':{'$meta':'textScore'}}
+        ))
+        cursor.sort([('score',{'$meta':'textscore'})])
+        return Response(
+            response=json.dumps(cursor,default=str),
+            status=200,
+            mimetype="application/json")
+    except Exception as ex:
+            print(ex)
+            return Response(
+            response= json.dumps(
+                {"message":"cannot find text"},
+                status=500,
+                mimetype="application/json"
+            )
+        )
 
 #5.	For each user logged in
 # a.List all articles ( already available ) 
@@ -86,7 +107,9 @@ def get_all_articlesbyuser():
 def create_articlebyuser():
     try:
         Users={
-            "author":request.form["author"]
+            "author":request.form["author"],
+            "title":request.form["title"],
+            "Keywords":request.form["Keywords"]
             }
         dbResponse =collection_of_astro.insert_one(Users)
         print(dbResponse.inserted_id)
@@ -113,7 +136,9 @@ def update_article(id):
     try:
         dbResponse = collection_of_astro.update_one(
             {"_id":ObjectId(id)},
-            {"$set":{"author":request.form["author"]}}
+            {"$set":{"author":request.form["author"]}},
+            {"$set":{"title":request.form["title"]}},
+            {"$set":{"keywords":request.form["keywords"]}}
         )
         if dbResponse.modified_count==1:
             return Response(
