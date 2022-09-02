@@ -63,10 +63,10 @@ def get_articles_withid(id):
 @app.route("/search",methods=["GET"])
 def seacrh():
     try:
-        cursor = list(db.collection.find(
+        cursor = db.collection.find(
             {'$text': {'$search': 'keywords'}},
             {'score':{'$meta':'textScore'}}
-        ))
+        )
         cursor.sort([('score',{'$meta':'textscore'})])
         return Response(
             response=json.dumps(cursor,default=str),
