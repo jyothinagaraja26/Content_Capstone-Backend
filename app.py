@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 # 1.List all articles ( already available ) 
 
-@app.route("/getallarticles",methods=["GET"])
+@app.route("/fetchall",methods=["GET"])
 def get_all_articles():
     try:
         data =list(collection.find({}))
@@ -38,7 +38,7 @@ def get_all_articles():
 
 # 2.List details of one article based on one articles  ID  
 
-@app.route("/getonearticlebyid/<id>",methods=["GET"])
+@app.route("/fetchbyid/<id>",methods=["GET"])
 def get_articles_withid(id):
     try:
         dbResponse =collection.find_one({"_id":ObjectId(id)})
